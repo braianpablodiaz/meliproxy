@@ -30,7 +30,10 @@ func (proxy *Proxy) StartProxy() {
 
 func (proxy *Proxy) configRouter() {
 	router := gin.Default()
-	router.Use(proxy.rateLimitMiddleware())
+	//router.Use(proxy.rateLimitMiddleware())
+	router.Use(proxy.rateLimitIpMiddleware())
+	router.Use(proxy.rateLimitIpPathMiddleware())
+	router.Use(proxy.rateLimitPathMiddleware())
 	router.Use(proxy.configHeaders())
 	proxy.Router = router
 
@@ -62,6 +65,23 @@ func (proxy *Proxy) rateLimitMiddleware() gin.HandlerFunc {
 	}
 }
 
+func (proxy *Proxy) rateLimitIpMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		middleware.RateLimitIpMiddleware(proxy.Repository, c )
+	}
+}
+
+func (proxy *Proxy) rateLimitIpPathMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		middleware.RateLimitIpPathMiddleware(proxy.Repository, c )
+	}
+}
+
+func (proxy *Proxy) rateLimitPathMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		middleware.RateLimitPathMiddleware(proxy.Repository, c )
+	}
+}
 
 func (proxy *Proxy) handleRequest(handler controller.RequestHandlerFunction) gin.HandlerFunc {
 	return func(c *gin.Context) {

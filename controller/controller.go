@@ -53,11 +53,11 @@ func Proxy(r *redis.Client, c *gin.Context, api string) {
         errorResponse(c, err.Error())
     }
     
-    c.JSON(200, jsonResponse)
+    c.JSON(response.StatusCode, jsonResponse)
 }
 
 
 func errorResponse(c *gin.Context, err string) {
     log.Print(err)
-    c.AbortWithStatusJSON(401, gin.H{"error": err})
+    c.AbortWithStatusJSON(500, gin.H{"error": err})
 }

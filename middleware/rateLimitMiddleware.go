@@ -39,9 +39,7 @@ func setEnviroment(value *int , key string , defaultValue string){
 	}
 }
 
-
 func RateLimitMiddleware(rdb *redis.Client, c *gin.Context) {
-	
 	requestModel := &controller.Request{ 
 		Ip: c.ClientIP(),
 		Path: c.Request.URL.EscapedPath(),
@@ -52,14 +50,74 @@ func RateLimitMiddleware(rdb *redis.Client, c *gin.Context) {
 	go ipRateLimit(rdb, c , requestModel, allow)
 	go ipPathRateLimit(rdb, c , requestModel, allow)
 	go pathRateLimit(rdb, c , requestModel, allow)
-	ipAllow, ipPathAllow := <-allow, <-allow 
+	ipAllow, ipPathAllow, pathAllow := <-allow, <-allow, <-allow
 
-	if ipAllow == false || ipPathAllow == false{
-		c.AbortWithStatusJSON(401, gin.H{"error": "A lot of request per second"})
+	if ipAllow == false || ipPathAllow == false || pathAllow == false{
+		c.AbortWithStatusJSON(429, gin.H{"error": "A lot of request per second"})
 	}
 
 	c.Next()
 }
+
+
+func RateLimitIpMiddleware(rdb *redis.Client, c *gin.Context) {
+	
+	requestModel := &controller.Request{ 
+		Ip: c.ClientIP(),
+		Path: c.Request.URL.EscapedPath(),
+		Method: c.Request.Method,
+	}
+
+	allow := make(chan bool)
+	go ipRateLimit(rdb, c , requestModel, allow)
+	ipAllow := <-allow
+
+	if ipAllow == false{
+		c.AbortWithStatusJSON(429, gin.H{"error": "A lot of request per second"})
+	}
+
+	c.Next()
+}
+
+func RateLimitIpPathMiddleware(rdb *redis.Client, c *gin.Context) {
+	
+	requestModel := &controller.Request{ 
+		Ip: c.ClientIP(),
+		Path: c.Request.URL.EscapedPath(),
+		Method: c.Request.Method,
+	}
+
+	allow := make(chan bool)
+	go ipPathRateLimit(rdb, c , requestModel, allow)
+	ipPathAllow := <-allow
+
+	if ipPathAllow == false{
+		c.AbortWithStatusJSON(429, gin.H{"error": "A lot of request per second"})
+	}
+
+	c.Next()
+}
+
+
+func RateLimitPathMiddleware(rdb *redis.Client, c *gin.Context) {
+	
+	requestModel := &controller.Request{ 
+		Ip: c.ClientIP(),
+		Path: c.Request.URL.EscapedPath(),
+		Method: c.Request.Method,
+	}
+
+	allow := make(chan bool)
+	go pathRateLimit(rdb, c , requestModel, allow)
+	pathAllow := <-allow
+
+	if pathAllow == false{
+		c.AbortWithStatusJSON(429, gin.H{"error": "A lot of request per second"})
+	}
+
+	c.Next()
+}
+
 
 
 func ipRateLimit(rdb *redis.Client, c *gin.Context, 
